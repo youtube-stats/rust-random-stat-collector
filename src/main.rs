@@ -96,6 +96,8 @@ fn main() {
         }
 
         let key: String = get_random_key(&keys, &mut rng).to_string();
+        println!("Using key {}", key);
+
         let ids: String = vec_id.join(",");
         let url: String = format!("https://www.googleapis.com/youtube/v3/channels?part=statistics&key={}&id={}", key, ids);
 
