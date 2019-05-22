@@ -1,9 +1,11 @@
 extern crate postgres;
+extern crate rand;
 extern crate reqwest;
 extern crate serde_json;
 extern crate serde;
 
 use std::collections::HashMap;
+use rand::seq::SliceRandom;
 
 const POSTGRESQL_URL: &'static str = "postgresql://admin@localhost:5432/youtube";
 const QUERY: &'static str = "SELECT * FROM youtube.stats.channels ORDER BY RANDOM() LIMIT 50";
@@ -25,12 +27,10 @@ struct StatisticsType {
 
     #[allow(dead_code)]
     commentCount: String,
-
     subscriberCount: String,
 
     #[allow(dead_code)]
     hiddenSubscriberCount: bool,
-
     videoCount: String
 }
 
@@ -42,7 +42,6 @@ struct  ItemType {
 
     #[allow(dead_code)]
     etag: String,
-
     id: String,
     statistics: StatisticsType
 }
@@ -61,8 +60,11 @@ struct YoutubeResponseType {
 
     #[allow(dead_code)]
     pageInfo: PageInfoType,
-
     items: Vec<ItemType>
+}
+
+fn get_random_key(raw_keys: &Vec<&str>, rng: &mut rand::prelude::ThreadRng) -> String {
+    raw_keys.choose(rng).unwrap().to_string()
 }
 
 fn main() {
@@ -72,7 +74,9 @@ fn main() {
     let conn: postgres::Connection =
         postgres::Connection::connect(params, tls).unwrap();
 
-    let key: String = std::env::var("YOUTUBE_KEY").unwrap();
+    let keys: String = std::env::var("YOUTUBE_KEYS").unwrap();
+    let keys: Vec<&str> = keys.split("|").collect::<Vec<&str>>();
+    let mut rng: rand::prelude::ThreadRng = rand::prelude::thread_rng();
 
     loop {
         let rows: postgres::rows::Rows = conn.query(QUERY, &[]).unwrap();
@@ -91,6 +95,7 @@ fn main() {
             vec_id.push(value.to_string());
         }
 
+        let key: String = get_random_key(&keys, &mut rng).to_string();
         let ids: String = vec_id.join(",");
         let url: String = format!("https://www.googleapis.com/youtube/v3/channels?part=statistics&key={}&id={}", key, ids);
 
