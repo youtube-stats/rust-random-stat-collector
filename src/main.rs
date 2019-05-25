@@ -89,6 +89,12 @@ fn main() {
 
         let key: String = reqwest::get(addr.as_str()).unwrap().text().unwrap();
         println!("Using key {}", key);
+        if key.is_empty() {
+            println!("Detected empty key - waiting 1 minutes");
+            let dur: std::time::Duration = std::time::Duration::from_secs(60);
+            std::thread::sleep(dur);
+            continue;
+        }
 
         let ids: String = vec_id.join(",");
         let url: String = format!("https://www.googleapis.com/youtube/v3/channels?part=statistics&key={}&id={}", key, ids);
